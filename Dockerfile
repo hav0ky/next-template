@@ -1,27 +1,32 @@
 # ---- Build Stage ----
-FROM node:20.12-alpine AS build
+FROM node:20-alpine AS builder
 
-# Create and set the working directory
 WORKDIR /app
-
 # Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy all source code into the container
+# Copy the rest of your files
 COPY . .
 
-# Build the React app for production
+# Build Next.js for production
 RUN npm run build
 
 # ---- Production Stage ----
-FROM nginx:stable-alpine
+FROM node:20-alpine AS runner
+WORKDIR /app
 
-# Copy build output from the previous stage into Nginx's html directory
-COPY --from=build /app/build /usr/share/nginx/html
+# Copy only necessary files from builder stage:
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
 
-# Expose port 80
-EXPOSE 80
+# If you’re using Next.js public folder or next.config.js, copy them as needed:
+# COPY --from=builder /app/public ./public
+# COPY --from=builder /app/next.config.js ./
 
-# Launch Nginx in the foreground
-CMD ["nginx", "-g", "daemon off;"]
+# Expose your app’s port (default is 3000 for Next)
+EXPOSE 3000
+
+# Start Next.js in production mode
+CMD ["npm", "run", "start"]
