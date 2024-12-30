@@ -3,4 +3,5 @@ export default function Home() {
     <div>
       Hello from next app
     </div>
+  )
 }
